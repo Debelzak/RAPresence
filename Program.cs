@@ -5,6 +5,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+#if OS_WINDOWS
+    using Windows.MemoryReader;
+#elif OS_LINUX
+    using Linux.MemoryReader;
+#endif
 class Program
 {
     public static void Main(string[] args)
