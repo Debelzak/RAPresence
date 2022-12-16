@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 class Program
 {
     public static void Main(string[] args)
@@ -15,7 +16,7 @@ class Program
         try
         {
             memoryReader.AttachProccess(processName);
-            memoryReader.ReadMemory(0x0142C0C8, 1024);
+            memoryReader.ReadMemory();
         }
         catch (Exception ex)
         {
@@ -48,7 +49,5 @@ class Program
         , presence?.args?.activity?.assets?.small_image
         , presence?.args?.activity?.assets?.small_text
         );
-
-        Console.ReadKey();
     }
 }
