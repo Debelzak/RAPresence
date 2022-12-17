@@ -18,31 +18,38 @@ namespace Linux.MemoryReader
             Process? process = Process.GetProcessesByName(processName).FirstOrDefault();
             if(process is null)
             {
-                throw new Exception("Processo não encontrado");
+                throw new Exception("Process not found");
             }
 
             this.process = process;
         }
 
         public void ReadMemory()
-        {
+        {  
+            //Creating stream reader and while 
             System.IO.StreamReader file = new System.IO.StreamReader(@"/proc/" + this.process.Id + "/maps");
             string? line;
+
+            //Creating regex pattern to match each line we want from /proc/<pid>/maps file
+            string pattern = @"([0-9A-Fa-f]+)-([0-9A-Fa-f]+) ([-r].*) (.*) (0 |.\[heap\])";
+
+            //While loop to each line matched above, we'll loop each of the mapped memory blocks until we find what we want
+            //It'll we probably at heap region
             while ((line = file.ReadLine()) != null)
             {
-                string pattern = @"([0-9A-Fa-f]+)-([0-9A-Fa-f]+) ([-r].*) (.*) (0 |.\[heap\])";
-                Match m = Regex.Match(line, pattern);
-                if (m.Success)
+                Match match = Regex.Match(line, pattern);
+                if (match.Success)
                 {
-                    string[] startend = (m.Value.Split(' '))[0].Split('-');
+                    //Set start, end and length of the region using the maps we got
+                    string[] startend = (match.Value.Split(' '))[0].Split('-');
                     long start = Convert.ToInt64(startend[0], 16);
                     long end = Convert.ToInt64(startend[1], 16);
                     long len = end - start;
 
-                    // Buffer the entire memory region
+                    //Buffer the entire memory region
                     if (len > 0 && end > 0 && start > 0)
                     {
-                        Console.WriteLine(line);
+                        Logger.Debug("Memory block: {0}", line);
                         using (FileStream fs = new FileStream(@"/proc/"+this.process.Id+"/mem", FileMode.Open, FileAccess.Read))
                         {
                             fs.Seek(start, SeekOrigin.Begin);
@@ -51,14 +58,15 @@ namespace Linux.MemoryReader
                             try 
                             {
                                 int bytesRead = fs.Read(regionBuffer, 0, (int)len);
-                                Console.WriteLine("{0} bytes read.", bytesRead);
 
-                                // If string was found
+                                // If the start of the string is found, we copy the part we want to another variable and break the loop
                                 if(Encoding.UTF8.GetString(regionBuffer).Contains("{\"nonce\":"))
                                 {
                                     byte[] searchPattern = {0x7b,0x22,0x6e,0x6f,0x6e,0x63,0x65,0x22,0x3a};  //{"nonce":
 
                                     int offset = IndexOf(regionBuffer, searchPattern);
+
+                                    Logger.Debug("Memory Address: 0x{0}", (start + offset).ToString("x") );
 
                                     List<byte> buffer = new List<byte>();
                                     for(int i=offset; i<len; i++)
@@ -75,10 +83,12 @@ namespace Linux.MemoryReader
 
                                     return;
                                 }
+
+                                Logger.Debug("{0} bytes read.", bytesRead);
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("ERROR: {0}", ex.Message);
+                                Logger.Error(ex.Message);
                             }
                         }
                     }
@@ -90,7 +100,7 @@ namespace Linux.MemoryReader
         {
             if(this.result is not null) return this.result;
 
-            return "Não foi possível interceptar o valor";
+            throw new Exception("Não foi possível interceptar o valor");
         }
 
         //Util
