@@ -34,7 +34,7 @@ namespace Linux.MemoryReader
             string pattern = @"([0-9A-Fa-f]+)-([0-9A-Fa-f]+) ([-r].*) (.*) (0 |.\[heap\])";
 
             //While loop to each line matched above, we'll loop each of the mapped memory blocks until we find what we want
-            //It'll we probably at heap region
+            //It'll be probably at heap region
             while ((line = file.ReadLine()) != null)
             {
                 Match match = Regex.Match(line, pattern);
@@ -49,7 +49,7 @@ namespace Linux.MemoryReader
                     //Buffer the entire memory region
                     if (len > 0 && end > 0 && start > 0)
                     {
-                        Logger.Debug("Memory block: {0}", line);
+                        Logger.Info("Reading memory block: {0}", line);
                         using (FileStream fs = new FileStream(@"/proc/"+this.process.Id+"/mem", FileMode.Open, FileAccess.Read))
                         {
                             fs.Seek(start, SeekOrigin.Begin);
@@ -66,17 +66,17 @@ namespace Linux.MemoryReader
 
                                     int offset = IndexOf(regionBuffer, searchPattern);
 
-                                    Logger.Debug("Memory Address: 0x{0}", (start + offset).ToString("x") );
+                                    Logger.Info("String found at address: 0x{0}", (start + offset).ToString("x") );
 
                                     List<byte> buffer = new List<byte>();
-                                    for(int i=offset; i<len; i++)
+                                    for(int index=offset; index<len; index++)
                                     {
-                                        if(regionBuffer[i] == 0x00)
+                                        if(regionBuffer[index] == 0x00)
                                         {
                                             break;
                                         }
                                         
-                                        buffer.Add(regionBuffer[i]);
+                                        buffer.Add(regionBuffer[index]);
                                     }
 
                                     this.result = Encoding.UTF8.GetString(buffer.ToArray());
@@ -84,7 +84,7 @@ namespace Linux.MemoryReader
                                     return;
                                 }
 
-                                Logger.Debug("{0} bytes read.", bytesRead);
+                                Logger.Info("{0} bytes read.", bytesRead);
                             }
                             catch (Exception ex)
                             {
@@ -108,12 +108,12 @@ namespace Linux.MemoryReader
         {
             if (patternToFind.Length > arrayToSearchThrough.Length)
                 return -1;
-            for (int i = 0; i < arrayToSearchThrough.Length - patternToFind.Length; i++)
+            for (int index = 0; index < arrayToSearchThrough.Length - patternToFind.Length; index++)
             {
                 bool found = true;
                 for (int j = 0; j < patternToFind.Length; j++)
                 {
-                    if (arrayToSearchThrough[i + j] != patternToFind[j])
+                    if (arrayToSearchThrough[index + j] != patternToFind[j])
                     {
                         found = false;
                         break;
@@ -121,7 +121,7 @@ namespace Linux.MemoryReader
                 }
                 if (found)
                 {
-                    return i;
+                    return index;
                 }
             }
             return -1;

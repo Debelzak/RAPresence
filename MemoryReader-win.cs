@@ -9,7 +9,6 @@ namespace Windows.MemoryReader
     {
         [DllImport("kernel32")]
         private static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
-
         [DllImport("kernel32")]
         private static extern bool ReadProcessMemory(int hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
@@ -40,7 +39,7 @@ namespace Windows.MemoryReader
             // If the start of the string is found, we copy the part we want to another variable
             if(Encoding.UTF8.GetString(regionBuffer).Contains("{\"nonce\":"))
             {
-                Logger.Debug("Memory Address: 0x{0}", address.ToString("x") );
+                Logger.Info("String found at address: 0x{0}", address.ToString("x") );
 
                 List<Byte> buffer = new List<byte>();
                 for(int i=0; i < regionBuffer.Length; i++)
