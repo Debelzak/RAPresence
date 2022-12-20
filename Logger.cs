@@ -2,8 +2,7 @@ using System;
 
 public static class Logger
 {
-    public static int logLevel = 0; //0=Errors only, 1=Info, 2=Warning, 3=Debug
-
+    public static int logLevel = 1; //0=Errors only, 1=Info, 2=Warning, 3=Debug
     public enum LogType {L_ERROR, L_INFO, L_WARN, L_DEBUG}
 
     private static void logMessage(LogType type, string? message, params object?[] overloads)
@@ -20,7 +19,7 @@ public static class Logger
             message = "{0}";
         }
         
-        if(message is not null) Console.WriteLine(string.Format(type.ToString() + ": " + message, overloads));
+        if(message is not null) Console.WriteLine(string.Format("[" + DateTime.Now.ToString() + "] " + type.ToString() + ": " + message, overloads));
         Console.ResetColor();
     }
 
