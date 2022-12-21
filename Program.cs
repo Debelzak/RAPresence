@@ -60,7 +60,7 @@ class Program
         ParseResults(result);
         Logger.Debug(result);
 
-        if(tcpClient)
+        if(tcpServer)
         {
             TcpClient client = new TcpClient();
             client.Send(ipAddress, port, Encoding.UTF8.GetBytes(result));

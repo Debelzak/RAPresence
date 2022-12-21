@@ -41,37 +41,30 @@ namespace Linux.MemoryReader
             {
                 fs.Seek(address, SeekOrigin.Begin);
 
-                try
+                byte[] buffer = new byte[bufferLength];
+
+                Logger.Info("Reading {0} bytes at address 0x{1}.", bufferLength, address.ToString("x"));
+                int bytesRead = fs.Read(buffer, 0, buffer.Length);
+                fs.Close();
+
+                if(Encoding.UTF8.GetString(buffer).Contains(Encoding.UTF8.GetString(searchPattern)))
                 {
-                    byte[] buffer = new byte[bufferLength];
-
-                    Logger.Info("Reading {0} bytes at address 0x{1}.", bufferLength, address.ToString("x"));
-                    int bytesRead = fs.Read(buffer, 0, buffer.Length);
-
-                    if(Encoding.UTF8.GetString(buffer).Contains(Encoding.UTF8.GetString(searchPattern)))
+                    List<byte> returnBuffer = new List<byte>();
+                    for(int index=0; index<buffer.Length; index++)
                     {
-                        List<byte> returnBuffer = new List<byte>();
-                        for(int index=0; index<buffer.Length; index++)
+                        if(buffer[index] == 0x00)
                         {
-                            if(buffer[index] == 0x00)
-                            {
-                                break;
-                            }
-                            
-                            returnBuffer.Add(buffer[index]);
+                            break;
                         }
-
-                        this.result = Encoding.UTF8.GetString(returnBuffer.ToArray());
-                    }
-                    else
-                    {
-                        throw new Exception(string.Format("String could not be found at address 0x{0}", address.ToString()));
+                        
+                        returnBuffer.Add(buffer[index]);
                     }
 
+                    this.result = Encoding.UTF8.GetString(returnBuffer.ToArray());
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Error(ex.Message);
+                    throw new Exception(string.Format("String could not be found at address 0x{0}", address.ToString()));
                 }
             }
         }
@@ -107,27 +100,20 @@ namespace Linux.MemoryReader
                             fs.Seek(start, SeekOrigin.Begin);
                             byte[] regionBuffer = new byte[len];
 
-                            try 
+                            int bytesRead = fs.Read(regionBuffer, 0, (int)len);
+                            fs.Close();
+                            
+                            Logger.Info("{0} bytes read.", bytesRead);
+
+                            // If the start of the string is found, we copy the part we want to another variable and break the loop
+                            if(Encoding.UTF8.GetString(regionBuffer).Contains(Encoding.UTF8.GetString(searchPattern)))
                             {
-                                int bytesRead = fs.Read(regionBuffer, 0, (int)len);
+                                int offset = IndexOf(regionBuffer, searchPattern);
+                                long address = start + offset;
 
-                                Logger.Info("{0} bytes read.", bytesRead);
+                                Logger.Info("String found at address: 0x{0}", address.ToString("x"));
 
-                                // If the start of the string is found, we copy the part we want to another variable and break the loop
-                                if(Encoding.UTF8.GetString(regionBuffer).Contains(Encoding.UTF8.GetString(searchPattern)))
-                                {
-                                    int offset = IndexOf(regionBuffer, searchPattern);
-                                    long address = start + offset;
-
-                                    Logger.Info("String found at address: 0x{0}", address.ToString("x"));
-
-                                    return address;
-                                }
-
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Error(ex.Message);
+                                return address;
                             }
                         }
                     }

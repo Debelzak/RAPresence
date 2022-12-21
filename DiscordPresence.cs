@@ -25,18 +25,22 @@ public static class DiscordPresence
 
     public static void Update(PresenceStatus? presence)
     {   
+        // State init
         string? state = presence?.args?.activity?.state;
         if(state is not null) state = (Encoding.UTF8.GetByteCount(state) <= 128) ? state : "";
 
+        // Details init
         string? details = presence?.args?.activity?.details;
         if(details is not null) details = (Encoding.UTF8.GetByteCount(details) <= 128) ? details : "";
 
+        // Timestamps init
         DiscordRPC.Timestamps timestamps = new DiscordRPC.Timestamps();
         DateTime start = new DateTime(1970, 1, 1).AddSeconds(Convert.ToInt32(presence?.args?.activity?.timestamps?.start));
         DateTime end = new DateTime(1970, 1, 1).AddSeconds(Convert.ToInt32(presence?.args?.activity?.timestamps?.end));
         if(start.Year >= DateTime.Now.Year) timestamps.Start = start;
         if(end.Year >= DateTime.Now.Year) timestamps.End = end;
 
+        // Assets init
         DiscordRPC.Assets assets = new DiscordRPC.Assets();
         string? large_image = presence?.args?.activity?.assets?.large_image;
         if(large_image is not null) assets.LargeImageKey = (Encoding.UTF8.GetByteCount(large_image) <= 128) ? large_image : assets.LargeImageKey;
@@ -50,16 +54,35 @@ public static class DiscordPresence
         string? small_text = presence?.args?.activity?.assets?.small_text;
         if(small_text is not null) assets.SmallImageText = (Encoding.UTF8.GetByteCount(small_text) <= 128) ? small_text : assets.SmallImageText;
 
+        // Won't set presence while retroarch is idle / Only works for PT-BR client, change at will.
         if(presence?.args?.activity?.details == "No menu")
         {
             client.ClearPresence();
             return;
         }
 
+        // WORKAROUND FOR RETROARCH PROBLEM: If the game has not changed, update only details and maintain current presence.
+        // retroarch 1.14.0 initializes the game with correct data, but has bugged pointers changing info like game name to a wrong string at runtime.
+        // This fixes the problem since the info we need (details) is not being bugged.
+        if(client.CurrentPresence is not null && start == client.CurrentPresence.Timestamps.Start)
+        {
+            Logger.Debug("[DISCORD] Same game. Not changing presence, only refreshing details");
+            client.SetPresence(new RichPresence()
+            {
+                Details = details,
+                State = client.CurrentPresence.State,
+                Timestamps = client.CurrentPresence.Timestamps,
+                Assets = client.CurrentPresence.Assets
+            });
+
+            return;
+        }
+        ////////////////////
+
         client.SetPresence(new RichPresence()
         {
             Details = details,
-            State = presence?.args?.activity?.state,
+            State = state,
             Timestamps = timestamps,
             Assets = assets
         });

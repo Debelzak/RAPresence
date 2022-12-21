@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("RetroArch Remote Rich Presence")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Debelzak")]
-[assembly: AssemblyProduct("RetroArchPresence")]
+[assembly: AssemblyProduct("RAPresence")]
 [assembly: AssemblyCopyright("Copyright © 2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
