@@ -4,12 +4,12 @@ using System.Net.Sockets;
 
 class TcpClient
 {
-    public void Send(string serverIp, int port, byte[] data)
+    public string? Request(string serverIp, int port, byte[] data)
     {
         connection:
         try 
         {
-            Logger.Info("[CLIENT] Sending feedback to {0}:{1}...", serverIp, port);
+            Logger.Info("[CLIENT] Sending data request to {0}:{1}...", serverIp, port);
             System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient();
             
             if(!client.ConnectAsync(serverIp, port).Wait(5000))
@@ -29,16 +29,18 @@ class TcpClient
             string response = Encoding.UTF8.GetString(responseBuffer);
             response = response.Trim('\0');
 
-            if(response == "SUCCESS")
+            if(response.Contains("nonce"))
             {
-                Logger.Info("[CLIENT] The server responded with: {0}", response);
+                Logger.Info("[CLIENT] Server response received!");
+                return response;
             }
-
-            stream.Close();
         }
         catch (Exception ex)
         {
-            Logger.Info("[CLIENT] Failed to send feedback: {0}", ex.Message);
+            Logger.Info("[CLIENT] Connection failed: {0}", ex.Message);
+            goto connection;
         }
+
+        return null;
     }
 }

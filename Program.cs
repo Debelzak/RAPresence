@@ -12,60 +12,80 @@ class Program
     private static string processName = "retroarch";
     private static bool discord = false;
     private static bool tcpServer = false;
+    private static bool httpServer = false;
     private static bool tcpClient = false;
     private static string ipAddress = "127.0.0.1";
     private static int port = 2000;
     private static long memoryAddress = 0x00;
+    public static string LatestResult = "";
 
     public static void Main(string[] args)
     {
-        OptionHandler.Run(args, ref ipAddress, ref port, ref tcpClient, ref tcpServer, ref discord);
+        OptionHandler.Run(args, ref ipAddress, ref port, ref tcpClient, ref tcpServer, ref discord, ref httpServer);
+
+        if(httpServer) Task.Run(() => HttpServer.Start());
+
+        TcpServer server = new TcpServer();
+
+        if(discord) DiscordPresence.Initialize();
 
         start:
         try 
         {
-            if(discord) DiscordPresence.Initialize();
-
-            if(tcpServer)
+            if(tcpServer) 
             {
-                TcpServer server = new TcpServer();
                 server.Start(ipAddress, port);
-            } else {
-                Run();
             }
-
-            if(discord) DiscordPresence.Dispose();
             
+            Run();
         }
         catch (Exception ex)
         {
             Logger.Error(ex.Message);
-            if(tcpClient)
+            if(tcpServer)
             {
+                server.Reset();
                 memoryAddress = 0x00;
-                Thread.Sleep(1000);
+                Thread.Sleep(5000);
                 goto start;
             }
         }
     }
 
-    private static void Run()
+    public static void Run()
     {
-        clientLoop:
+        if(tcpClient)
+        {
+            ClientLoop();
+            return;
+        }
+
         MemoryReader memoryReader = new MemoryReader();
         memoryReader.AttachProccess(processName);
         memoryReader.ReadMemory(ref memoryAddress, 1024);
         string result = memoryReader.GetResult();
+        
+        LatestResult = result;
 
         ParseResults(result);
         Logger.Debug(result);
+    }
 
-        if(tcpServer)
+    private static void ClientLoop()
+    {
+        while(true)
         {
             TcpClient client = new TcpClient();
-            client.Send(ipAddress, port, Encoding.UTF8.GetBytes(result));
-            Thread.Sleep(5000);
-            goto clientLoop;
+            byte[] requestPacket = Encoding.UTF8.GetBytes("REQUEST");
+
+            string? response = client.Request(ipAddress, port, requestPacket);
+            if(response is not null)
+            {
+                ParseResults(response);
+                Logger.Debug(response);
+            }
+
+            Thread.Sleep(1000);
         }
     }
 

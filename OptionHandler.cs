@@ -1,7 +1,7 @@
 using System.Net;
 static class OptionHandler
 {
-    public static void Run(string[] args, ref string ipAddress, ref int port , ref bool tcpClient, ref bool tcpServer, ref bool discord)
+    public static void Run(string[] args, ref string ipAddress, ref int port , ref bool tcpClient, ref bool tcpServer, ref bool discord, ref bool httpServer)
     {
         string[] availableOptions = {
             "-h", "--help",
@@ -10,7 +10,8 @@ static class OptionHandler
             "-s", "--server",
             "-i", "--ip", 
             "-p", "--port",
-            "-d", "--discord"
+            "-d", "--discord",
+            "-w", "--webserver"
         };
 
         var help = () => {
@@ -24,6 +25,7 @@ static class OptionHandler
             Console.WriteLine("       -i|--ip <value>: Sets the IP the client will attempt to connect to, or the server will accepts connections from. (Default: 127.0.0.1)");
             Console.WriteLine("       -p|--port <value>: Sets the port the client will attempt to connect to, or the server will accepts connections from. (Default: 2000)");
             Console.WriteLine("       -d|--discord: Enable Discord Rich Presence. (Default: Off)");
+            Console.WriteLine("       -w|--webserver: Enable web api. [Only when using server] (Default: Off)");
             Environment.Exit(1);
         };
 
@@ -101,10 +103,19 @@ static class OptionHandler
                     port = int.Parse(optionValue);
                 }
 
-                // Option [--server | -s]
+                // Option [--discord | -d]
                 if(optionFlag == "--discord" || optionFlag == "-d")
                 {
                     discord = true;
+                }
+
+                // Option [--webserver | -w]
+                if(optionFlag == "--webserver" || optionFlag == "-w")
+                {
+                    if(!tcpServer)
+                    throw new Exception(string.Format("Webserver is only supported when acting as a server."));
+                    
+                    httpServer = true;
                 }
             }
         }
